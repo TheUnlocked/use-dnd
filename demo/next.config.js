@@ -9,6 +9,7 @@ let nextConfig = {
         if (config.mode === 'development') {
             config.module.rules.push({
                 test: /\.js$/,
+                exclude: /node_modules[\\/].pnpm[\\/]next/,
                 use: ['source-map-loader'],
                 enforce: 'pre',
             });
