@@ -1,0 +1,29 @@
+{
+    "env": {
+        "browser": true,
+        "es2021": true
+    },
+    "extends": [],
+    "plugins": [
+        "@typescript-eslint",
+        "react-hooks-addons"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+    },
+    "rules": {
+        "@typescript-eslint/no-unused-vars": ["warn"],
+        "@typescript-eslint/semi": ["warn", "always"],
+        "@typescript-eslint/brace-style": ["warn", "stroustrup", { "allowSingleLine": true }],
+        "array-bracket-spacing": ["warn", "never"],
+        "@typescript-eslint/object-curly-spacing": ["warn", "always"],
+        "@typescript-eslint/indent": ["warn", 4],
+        "linebreak-style": ["warn", "unix"],
+        "@typescript-eslint/quotes": ["warn", "single"],
+
+        "react/react-in-jsx-scope": "off",
+        "react-hooks-addons/no-unused-deps": "warn"
+    }
+}

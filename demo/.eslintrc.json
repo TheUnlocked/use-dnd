@@ -1,0 +1,15 @@
+{
+  "root": true,
+  "extends": [
+    "next/core-web-vitals",
+    "../shared.eslintrc.json"
+  ],
+  "rules": {
+    "react-hooks/exhaustive-deps": [
+      "warn",
+      {
+        "additionalHooks": "(useDrop|useDrag|useDragLayer)"
+      }
+    ]
+  }
+}
