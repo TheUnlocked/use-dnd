@@ -22,15 +22,12 @@ function DragItem({ name }: { name: string }) {
 }
 
 function DragLayer() {
-    const { dragging, content, x, y } = useDragLayer(() => ({
-        type: 'x',
-        collect: info => ({
-            dragging: Boolean(info.itemType),
-            content: info.item,
-            x: info.event?.clientX,
-            y: info.event?.clientY,
-        })
-    }), []);
+    const { dragging, content, x, y } = useDragLayer('x', info => ({
+        dragging: Boolean(info.itemType),
+        content: info.item,
+        x: info.event?.clientX,
+        y: info.event?.clientY,
+    }));
 
     if (!dragging) {
         return null;
@@ -49,8 +46,8 @@ const Home: NextPage = () => {
     const [text, setText] = useState('Drop here');
 
     const [{ isDragging }, drop] = useDrop(() => ({
-        type: 'x',
-        allowForeign: true,
+        accept: 'x',
+        acceptForeign: true,
         hover({ event }) {
             if (event.ctrlKey) {
                 event.dataTransfer!.dropEffect = 'copy';

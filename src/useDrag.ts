@@ -16,7 +16,7 @@ export interface UseDragOptions<ItemType extends string, Collected> {
     serialize?(item: ItemContent<ItemType>): string;
     startDragging?(event: DragEvent): void;
     finishDragging?(event: DragEvent): void;
-    collect?: Collected | ((event?: DragEvent) => Collected);
+    collect?: (event?: DragEvent) => Collected;
 };
 
 export function useDrag<Collected>(options: UseDragOptions<string, Collected>): UseDragResult<Collected>;
@@ -34,7 +34,7 @@ export function useDrag<Collected>(options: UseDragOptions<string, Collected> | 
 
     const [dragEvent, setDragEvent] = useState<DragEvent>();
     
-    const collectedData = useMemo(() => collect instanceof Function ? collect(dragEvent) : collect, [collect, dragEvent])!;
+    const collectedData = useMemo(() => collect ? collect(dragEvent) : undefined, [collect, dragEvent])!;
     
     const serializer = useMemo(() => {
         if (serialize) {

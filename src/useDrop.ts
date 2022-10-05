@@ -9,17 +9,16 @@ export type UseDropResult<Collected> = [
     dropTargetRef: RefConnector,
 ];
 
-export interface UseDropOptions<ItemTypes extends string | readonly string[], Collected> extends UseDragInfoOptions<ItemTypes, Collected> {
-    drop?(info: DragStatus<Arrayify<ItemTypes>>): void;
-    hover?(info: DragStatus<Arrayify<ItemTypes>>): void;
+export interface UseDropOptions<ItemTypes extends string | readonly string[], Collected, AcceptForeign extends boolean> extends UseDragInfoOptions<ItemTypes, Collected, AcceptForeign> {
+    drop?(info: DragStatus<Arrayify<ItemTypes>, false>): void;
+    hover?(info: DragStatus<Arrayify<ItemTypes>, AcceptForeign>): void;
     deserialize?: Deserializer<Arrayify<ItemTypes>>;
-    allowForeign?: boolean;
 };
 
-export function useDrop<ItemTypes extends string | readonly string[], Collected>(options: UseDropOptions<ItemTypes, Collected>): UseDropResult<Collected>;
-export function useDrop<ItemTypes extends string | readonly string[], Collected>(options: () => UseDropOptions<ItemTypes, Collected>, deps: unknown[]): UseDropResult<Collected>;
-export function useDrop<ItemTypes extends string | readonly string[], Collected>(
-    _options: UseDropOptions<ItemTypes, Collected> | (() => UseDropOptions<ItemTypes, Collected>),
+export function useDrop<ItemTypes extends string | readonly string[], Collected, AcceptForeign extends boolean>(options: UseDropOptions<ItemTypes, Collected, AcceptForeign>): UseDropResult<Collected>;
+export function useDrop<ItemTypes extends string | readonly string[], Collected, AcceptForeign extends boolean>(options: () => UseDropOptions<ItemTypes, Collected, AcceptForeign>, deps: unknown[]): UseDropResult<Collected>;
+export function useDrop<ItemTypes extends string | readonly string[], Collected, AcceptForeign extends boolean>(
+    _options: UseDropOptions<ItemTypes, Collected, AcceptForeign> | (() => UseDropOptions<ItemTypes, Collected, AcceptForeign>),
     deps?: unknown[]
 ): UseDropResult<Collected> {
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -27,7 +26,7 @@ export function useDrop<ItemTypes extends string | readonly string[], Collected>
 
     const { collected, types, itemType, item } = useDragInfo(options);
 
-    const { deserialize, allowForeign, drop, hover } = options;
+    const { deserialize, drop, hover, acceptForeign } = options;
     
     const [dropTarget, setDropTarget] = useState<HTMLElement | null>();
 
@@ -49,14 +48,14 @@ export function useDrop<ItemTypes extends string | readonly string[], Collected>
     useEffect(() => {
         if (dropTarget && drop) {
             function handler(e: DragEvent) {
-                if (item) {
+                if (item !== undefined) {
                     drop!({
                         event: e,
                         item,
                         itemType,
                     });
                 }
-                else if (allowForeign) {
+                else {
                     const itemType = e.dataTransfer?.types.find(x => types.includes(x));
                     if (itemType) {
                         drop!({
@@ -71,17 +70,17 @@ export function useDrop<ItemTypes extends string | readonly string[], Collected>
             dropTarget.addEventListener('drop', handler);
             return () => dropTarget.removeEventListener('drop', handler);
         }
-    }, [types, item, itemType, allowForeign, deserializer, dropTarget, drop]);
+    }, [types, item, itemType, deserializer, dropTarget, drop]);
 
     useEffect(() => {
         if (dropTarget) {
             function handler(e: DragEvent) {
-                hover?.({
-                    event: e,
-                    item,
-                    itemType,
-                });
-                if (allowForeign || item) {
+                if (acceptForeign || item) {
+                    hover?.({
+                        event: e,
+                        item,
+                        itemType,
+                    });
                     e.preventDefault();
                 }
             }
@@ -93,7 +92,7 @@ export function useDrop<ItemTypes extends string | readonly string[], Collected>
                 dropTarget.removeEventListener('dragover', handler);
             };
         }
-    }, [allowForeign, item, itemType, dropTarget, hover]);
+    }, [acceptForeign, item, itemType, dropTarget, hover]);
 
     return [
         collected,

@@ -1,6 +1,6 @@
 {
   "name": "use-dnd",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A lighter drag-and-drop library for React",
   "sideEffects": false,
   "main": "dist/index.js",

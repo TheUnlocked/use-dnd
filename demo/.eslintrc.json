@@ -8,7 +8,7 @@
     "react-hooks/exhaustive-deps": [
       "warn",
       {
-        "additionalHooks": "(useDrop|useDrag|useDragLayer)"
+        "additionalHooks": "^(useDrop|useDrag)$"
       }
     ]
   }

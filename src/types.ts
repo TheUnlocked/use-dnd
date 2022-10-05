@@ -15,16 +15,14 @@ interface EmptyDragStatus {
     event?: undefined;
     item?: undefined;
     itemType?: undefined;
-    items?: undefined;
 }
 
-export interface DragStatus<T extends readonly string[]> {
+export interface DragStatus<T extends readonly string[], AcceptForeign extends boolean> {
     event: DragEvent;
-    item: ItemContent<T[number]>;
+    item: (AcceptForeign extends true ? undefined : never) | ItemContent<T[number]>;
     itemType: T[number];
-    // items: { [ItemType in T[number]]: ItemContent<ItemType> };
 }
 
-export type CollectDragStatus<T extends readonly string[]> = EmptyDragStatus | DragStatus<T>;
+export type CollectDragStatus<T extends readonly string[], AcceptForeign extends boolean> = EmptyDragStatus | DragStatus<T, AcceptForeign>;
 
 export type Arrayify<T extends string | readonly string[]> = T extends string ? readonly [T] : T;
