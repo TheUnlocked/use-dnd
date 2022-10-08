@@ -77,7 +77,7 @@ export function useDrag<Collected>(options: UseDragOptions<string, Collected> | 
         }
     }, [dragHandle]);
 
-    const { beginDrag } = useDraggingCallbacks();
+    const { setDrag } = useDraggingCallbacks();
 
     useEffect(() => {
         if (dragHandle) {
@@ -90,7 +90,7 @@ export function useDrag<Collected>(options: UseDragOptions<string, Collected> | 
                     e.dataTransfer.setDragImage(dragPreviewRef.current, e.offsetX, e.offsetY);
                 }
                 e.dataTransfer.setData(type, serializer(item));
-                beginDrag(type, item);
+                setDrag(type, item);
                 startDragging?.(e);
             }
 
@@ -98,20 +98,20 @@ export function useDrag<Collected>(options: UseDragOptions<string, Collected> | 
             
             return () => dragHandle.removeEventListener('dragstart', handler);
         }
-    }, [type, item, dragHandle, serializer, startDragging, beginDrag]);
+    }, [type, item, dragHandle, serializer, startDragging, setDrag]);
 
     useEffect(() => {
         if (dragHandle) {
             function handler(e: DragEvent) {
                 finishDragging?.(e);
                 setDragEvent(undefined);
-                beginDrag();
+                setDrag();
             }
             dragHandle.addEventListener('dragend', handler);
             
             return () => dragHandle.removeEventListener('dragend', handler);
         }
-    }, [dragHandle, finishDragging, beginDrag]);
+    }, [dragHandle, finishDragging, setDrag]);
 
     return [
         collectedData,

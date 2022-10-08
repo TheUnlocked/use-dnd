@@ -5,12 +5,12 @@ type SubscriptionCallback = (itemType?: string, item?: unknown, event?: DragEven
 /** @internal */
 export interface DraggingContextProps {
     subscribe(callback: SubscriptionCallback): () => void;
-    beginDrag(...args: [itemType: string, item: unknown] | []): void;
+    setDrag(...args: [itemType: string, item: unknown] | []): void;
 }
 
 const DraggingContext = createContext<DraggingContextProps>({
     subscribe() { throw new Error('Cannot use `use-drag` hooks outside of a `DragDropProvider`'); },
-    beginDrag() { throw new Error('Cannot use `use-drag` hooks outside of a `DragDropProvider`'); },
+    setDrag() { throw new Error('Cannot use `use-drag` hooks outside of a `DragDropProvider`'); },
 });
 
 /** @internal */
@@ -33,12 +33,17 @@ export function DragDropProvider(props: PropsWithChildren<{}>) {
                 susbcriptions.current.forEach(callback => callback(undefined, undefined, e));
             }
         }
+        function handleDrop(e: DragEvent) {
+            clearEvent(e);
+            currentItem.current = undefined;
+            draggingLocal.current = false;
+        }
 
-        document.addEventListener('drop', clearEvent);
+        document.addEventListener('drop', handleDrop);
         document.addEventListener('dragover', setEvent);
         document.addEventListener('dragleave', clearEvent);
         return () => {
-            document.removeEventListener('drop', clearEvent);
+            document.removeEventListener('drop', handleDrop);
             document.removeEventListener('dragover', setEvent);
             document.removeEventListener('dragleave', clearEvent);
         };
@@ -51,7 +56,7 @@ export function DragDropProvider(props: PropsWithChildren<{}>) {
             susbcriptions.current.add(callback);
             return () => susbcriptions.current.delete(callback);
         },
-        beginDrag(...args: [itemType: string, item: unknown] | []) {
+        setDrag(...args: [itemType: string, item: unknown] | []) {
             if (args.length === 0) {
                 currentItem.current = undefined;
                 draggingLocal.current = false;
