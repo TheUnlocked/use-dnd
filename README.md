@@ -17,7 +17,7 @@
 * Support for foreign objects (e.g. dragging from one window to another)
 * Direct access to DOM events
     * Allows for fine-grained control over drop effect
-* Extremely light (~2kB bundled and gzipped)
+* Extremely light (~3kB bundled and gzipped)
 
 ## Installation
 
@@ -31,7 +31,7 @@ Or the equivalent for your package manager of choice.
 
 ### Package size
 
-The NPM bundle is much larger than the final bundled output would be with something like [webpack](https://webpack.js.org/) because it is not minified and includes the TypeScript source and source maps. While the exact bundled size may vary slightly, it should be quite small. Based on estimates from `pnpm analyze` in `./demo`, the final minified and gzipped size will probably be around 2 kB.
+The NPM bundle is much larger than the final bundled output would be with something like [webpack](https://webpack.js.org/) because it is not minified and includes the TypeScript source and source maps. While the exact bundled size may vary slightly, it should be quite small. Based on estimates from `pnpm analyze` in `./demo`, the final minified and gzipped size will probably be around 3kB.
 
 ### Source Maps
 
@@ -185,7 +185,7 @@ The drag type(s) which can be dropped on the target. Use `null` to accept all dr
 
 #### `collect`
 
-Type: `(info: CollectDragStatus) => Collected`  
+Type: `(info: DropStatus) => Collected`  
 Default: `undefined`
 
 A callback which is fired whenever an update occurs. If an accepted item is not being dragged, `info` will be `{}`. The first item in the hook result array will be the value returned by `collect`.
@@ -194,14 +194,14 @@ Foreign objects are indicated by `info.item` being `undefined`.
 
 #### `drop`
 
-Type: `(info: DragStatus) => void`  
+Type: `(info: EventStatus) => void`  
 Default: `undefined`
 
 A callback which is fired when an item is dropped on the target.
 
 #### `hover`
 
-Type: `(info: DragStatus) => void`  
+Type: `(info: EventStatus) => void`  
 Default: `undefined`
 
 A callback which is fired when an item is hovered over the target.
@@ -248,7 +248,7 @@ The drag type(s) which can be dropped on the target. Use `null` to accept all dr
 
 #### `collect`
 
-Type: `(info: CollectDragStatus) => Collected`
+Type: `(info: DragLayerStatus) => Collected`
 
 A callback which is fired whenever an update occurs. If an accepted item is not being dragged, `info` will be `{}`. The hook result will be the value returned by `collect`.
 

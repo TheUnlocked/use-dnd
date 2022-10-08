@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSetDraggingItem } from './DragDropProvider.js';
+import { useDraggingCallbacks } from './DragDropProvider.js';
 import type { ItemContent, RefConnector } from './types.js';
 
 const identity = <T>(x: T): T => x;
@@ -77,7 +77,7 @@ export function useDrag<Collected>(options: UseDragOptions<string, Collected> | 
         }
     }, [dragHandle]);
 
-    const setDraggingItem = useSetDraggingItem();
+    const { beginDrag } = useDraggingCallbacks();
 
     useEffect(() => {
         if (dragHandle) {
@@ -90,7 +90,7 @@ export function useDrag<Collected>(options: UseDragOptions<string, Collected> | 
                     e.dataTransfer.setDragImage(dragPreviewRef.current, e.offsetX, e.offsetY);
                 }
                 e.dataTransfer.setData(type, serializer(item));
-                setDraggingItem([type, item]);
+                beginDrag(type, item);
                 startDragging?.(e);
             }
 
@@ -98,20 +98,20 @@ export function useDrag<Collected>(options: UseDragOptions<string, Collected> | 
             
             return () => dragHandle.removeEventListener('dragstart', handler);
         }
-    }, [type, item, dragHandle, serializer, startDragging, setDraggingItem]);
+    }, [type, item, dragHandle, serializer, startDragging, beginDrag]);
 
     useEffect(() => {
         if (dragHandle) {
             function handler(e: DragEvent) {
                 finishDragging?.(e);
                 setDragEvent(undefined);
-                setDraggingItem();
+                beginDrag();
             }
             dragHandle.addEventListener('dragend', handler);
             
             return () => dragHandle.removeEventListener('dragend', handler);
         }
-    }, [dragHandle, finishDragging, setDraggingItem]);
+    }, [dragHandle, finishDragging, beginDrag]);
 
     return [
         collectedData,

@@ -1,34 +1,35 @@
-import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useRef } from 'react';
 
-const DraggingContext = createContext<readonly [string | undefined, unknown | undefined, DragEvent | undefined]>([undefined, undefined, undefined]);
-const SetDraggingContext = createContext<(args?: [type: string, item: unknown]) => void>(() => {});
-
-const NO_DRAG_DATA = [,,,] as const;
+type SubscriptionCallback = (itemType?: string, item?: unknown, event?: DragEvent) => void;
 
 /** @internal */
-export const useDraggingData = () => useContext(DraggingContext);
-export const useSetDraggingItem = () => useContext(SetDraggingContext);
+export interface DraggingContextProps {
+    subscribe(callback: SubscriptionCallback): () => void;
+    beginDrag(...args: [itemType: string, item: unknown] | []): void;
+}
+
+const DraggingContext = createContext<DraggingContextProps>({
+    subscribe() { throw new Error('Cannot use `use-drag` hooks outside of a `DragDropProvider`'); },
+    beginDrag() { throw new Error('Cannot use `use-drag` hooks outside of a `DragDropProvider`'); },
+});
+
+/** @internal */
+export const useDraggingCallbacks = () => useContext(DraggingContext);
 
 export function DragDropProvider(props: PropsWithChildren<{}>) {
-    const [currentItem, setCurrentItem] = useState<[string, unknown]>();
-    const [dragEvent, setDragEvent] = useState<DragEvent>();
-    
-    const isLocalItemPresentRef = useRef(false);
-
-    useEffect(() => {
-        isLocalItemPresentRef.current = Boolean(currentItem);
-    }, [currentItem]);
+    const currentItem = useRef<[string, unknown]>();
+    const susbcriptions = useRef(new Set<SubscriptionCallback>());
 
     useEffect(() => {
         function setEvent(e: DragEvent) {
-            setDragEvent(e);
-            if (!isLocalItemPresentRef.current && e.dataTransfer?.types[0]) {
-                setCurrentItem([e.dataTransfer.types[0], undefined]);
+            if (!currentItem.current && e.dataTransfer?.types[0]) {
+                currentItem.current = [e.dataTransfer.types[0], undefined];
             }
+            susbcriptions.current.forEach(callback => callback(...currentItem.current ?? [,,] as [string | undefined, unknown], e));
         }
         function clearEvent(e: DragEvent) {
             if (e.relatedTarget === null) {
-                setDragEvent(undefined);
+                susbcriptions.current.forEach(callback => callback(undefined, undefined, e));
             }
         }
 
@@ -41,7 +42,22 @@ export function DragDropProvider(props: PropsWithChildren<{}>) {
             document.removeEventListener('dragleave', clearEvent);
         };
     }, []);
-    return <SetDraggingContext.Provider value={setCurrentItem}>
-        <DraggingContext.Provider value={useMemo(() => dragEvent ? [...currentItem ?? [,,], dragEvent] : NO_DRAG_DATA, [currentItem, dragEvent])} {...props} />
-    </SetDraggingContext.Provider>;
+    return <DraggingContext.Provider {...props} value={useMemo(() => ({
+        subscribe(callback) {
+            if (susbcriptions.current.has(callback)) {
+                throw new Error('Cannot subscribe with the same callback multiple times');
+            }
+            susbcriptions.current.add(callback);
+            return () => susbcriptions.current.delete(callback);
+        },
+        beginDrag(...args: [itemType: string, item: unknown] | []) {
+            if (args.length === 0) {
+                currentItem.current = undefined;
+            }
+            else {
+                currentItem.current = args;
+            }
+            susbcriptions.current.forEach(callback => callback(...args as [itemType?: string, item?: unknown]));
+        },
+    }), [])} />;
 }

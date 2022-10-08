@@ -1,17 +1,36 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Arrayify, DragStatus, ItemContent, RefConnector } from './types.js';
-import useDragInfo, { UseDragInfoOptions } from './useDragInfo.js';
+import { useDraggingCallbacks } from './DragDropProvider.js';
+import type { Arrayify, EventStatus, ItemContent, RefConnector } from './types.js';
+
+function dropStatusEql(left: DropStatus<string[], boolean>, right: DropStatus<string[], boolean>) {
+    return left.item === right.item
+        && left.itemType === right.itemType
+        && left.isOver === right.isOver;
+}
 
 type Deserializer<ItemTypes extends readonly string[]> = <ItemType extends ItemTypes[number]>(type: ItemType, data: string) => ItemContent<ItemType>;
+
+interface PopulatedDropStatus<T extends readonly string[], AcceptForeign extends boolean> {
+    item: (AcceptForeign extends true ? undefined : never) | ItemContent<T[number]>;
+    itemType: T[number];
+    isOver: boolean;
+}
+
+type EmptyDropStatus = { [Key in keyof PopulatedDropStatus<[], boolean>]?: undefined };
+
+export type DropStatus<T extends readonly string[], AcceptForeign extends boolean> = EmptyDropStatus | PopulatedDropStatus<T, AcceptForeign>;
 
 export type UseDropResult<Collected> = [
     collectedData: Collected,
     dropTargetRef: RefConnector,
 ];
 
-export interface UseDropOptions<ItemTypes extends string | readonly string[], Collected, AcceptForeign extends boolean> extends UseDragInfoOptions<ItemTypes, Collected, AcceptForeign> {
-    drop?(info: DragStatus<Arrayify<ItemTypes>, false>): void;
-    hover?(info: DragStatus<Arrayify<ItemTypes>, AcceptForeign>): void;
+export interface UseDropOptions<ItemTypes extends string | readonly string[], Collected, AcceptForeign extends boolean> {
+    accept: ItemTypes | null;
+    collect?: (info: DropStatus<Arrayify<ItemTypes>, AcceptForeign>) => Collected;
+    acceptForeign?: AcceptForeign;
+    drop?(info: EventStatus<Arrayify<ItemTypes>, false>): void;
+    hover?(info: EventStatus<Arrayify<ItemTypes>, AcceptForeign>): void;
     deserialize?: Deserializer<Arrayify<ItemTypes>>;
 };
 
@@ -21,19 +40,49 @@ export function useDrop<ItemTypes extends string | readonly string[], Collected,
     _options: UseDropOptions<ItemTypes, Collected, AcceptForeign> | (() => UseDropOptions<ItemTypes, Collected, AcceptForeign>),
     deps?: unknown[]
 ): UseDropResult<Collected> {
+    const {
+        accept,
+        acceptForeign,
+        collect,
+        deserialize,
+        drop,
+        hover,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    const options = useMemo(_options instanceof Function ? _options : () => _options, deps);
-
-    const { collected, types, itemType, item } = useDragInfo(options);
-
-    const { deserialize, drop, hover, acceptForeign } = options;
+    } = useMemo(_options instanceof Function ? _options : () => _options, deps);
     
-    const [dropTarget, setDropTarget] = useState<HTMLElement | null>();
+    const [dropTarget, setDropTarget] = useState<HTMLElement | null>(null);
 
     const handleDragHandleRefChange: RefConnector = useCallback(elt => {
-        setDropTarget(elt);
+        setDropTarget(elt ?? null);
         return elt;
     }, []);
+
+    const { subscribe } = useDraggingCallbacks();
+    
+    const types = useMemo<Arrayify<ItemTypes> | null>(() => typeof accept === 'string' ? [accept] : accept as any, [accept]);
+    
+    const [dragStatus, setDragStatus] = useState<DropStatus<Arrayify<ItemTypes>, AcceptForeign>>({});
+    const collected = useMemo(() => collect?.(dragStatus), [collect, dragStatus])!;
+
+    useEffect(() => {
+        return subscribe((itemType, item, event) => {
+            if (itemType !== undefined && (!types || types.includes(itemType!)) && (acceptForeign || item)) {
+                const newDragStatus = {
+                    itemType,
+                    item: item as any,
+                    isOver: dropTarget && event?.target instanceof Node ? dropTarget.contains(event.target) : false,
+                };
+                setDragStatus(dragStatus => dropStatusEql(newDragStatus, dragStatus) ? dragStatus : newDragStatus);
+            }
+            else {
+                setDragStatus(dragStatus => dropStatusEql({}, dragStatus) ? dragStatus : {});
+            }
+        });
+    }, [subscribe, acceptForeign, types, dropTarget]);
+
+    const itemType = dragStatus.itemType!;
+    const item = dragStatus.item;
+    const effectiveTypes = useMemo(() => types ?? (dragStatus.itemType ? [dragStatus.itemType] : []), [types, dragStatus.itemType]);
 
     const deserializer = useCallback((type: string, data: string) => {
         if (deserialize) {
@@ -56,7 +105,7 @@ export function useDrop<ItemTypes extends string | readonly string[], Collected,
                     });
                 }
                 else {
-                    const itemType = e.dataTransfer?.types.find(x => types.includes(x));
+                    const itemType = e.dataTransfer?.types.find(x => effectiveTypes.includes(x));
                     if (itemType) {
                         drop!({
                             event: e,
@@ -70,7 +119,7 @@ export function useDrop<ItemTypes extends string | readonly string[], Collected,
             dropTarget.addEventListener('drop', handler);
             return () => dropTarget.removeEventListener('drop', handler);
         }
-    }, [types, item, itemType, deserializer, dropTarget, drop]);
+    }, [effectiveTypes, item, itemType, deserializer, dropTarget, drop]);
 
     useEffect(() => {
         if (dropTarget) {
@@ -78,7 +127,9 @@ export function useDrop<ItemTypes extends string | readonly string[], Collected,
                 if (acceptForeign || item) {
                     hover?.({
                         event: e,
-                        item,
+                        // item isn't necessary non-undefined here, but due to the complexity of the types involved
+                        // TypeScript isn't able to figure out that an undefined item is allowed here.
+                        item: item!,
                         itemType,
                     });
                     e.preventDefault();

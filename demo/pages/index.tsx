@@ -45,7 +45,7 @@ function DragLayer() {
 const Home: NextPage = () => {
     const [text, setText] = useState('Drop here');
 
-    const [{ isDragging }, drop] = useDrop(() => ({
+    const [{ isDragging, isOver }, drop] = useDrop(() => ({
         accept: 'x',
         acceptForeign: true,
         hover({ event }) {
@@ -58,6 +58,7 @@ const Home: NextPage = () => {
         },
         collect: data => ({
             isDragging: Boolean(data.itemType),
+            isOver: data.isOver,
         }),
         drop(data) {
             setText(data.item);
@@ -69,7 +70,7 @@ const Home: NextPage = () => {
         <DragItem name="Item A" />
         <DragItem name="Item B" />
         <DragItem name="Item C" />
-        <div style={{ color: isDragging ? 'red' : undefined }} ref={drop}>{text}</div>
+        <div style={{ color: isOver ? 'green' : isDragging ? 'red' : undefined }} ref={drop}>{text}</div>
     </>;
 };
 
