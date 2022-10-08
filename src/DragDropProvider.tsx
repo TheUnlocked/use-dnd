@@ -17,12 +17,13 @@ const DraggingContext = createContext<DraggingContextProps>({
 export const useDraggingCallbacks = () => useContext(DraggingContext);
 
 export function DragDropProvider(props: PropsWithChildren<{}>) {
+    const draggingLocal = useRef(false);
     const currentItem = useRef<[string, unknown]>();
     const susbcriptions = useRef(new Set<SubscriptionCallback>());
 
     useEffect(() => {
         function setEvent(e: DragEvent) {
-            if (!currentItem.current && e.dataTransfer?.types[0]) {
+            if (!draggingLocal.current && e.dataTransfer?.types[0]) {
                 currentItem.current = [e.dataTransfer.types[0], undefined];
             }
             susbcriptions.current.forEach(callback => callback(...currentItem.current ?? [,,] as [string | undefined, unknown], e));
@@ -53,9 +54,11 @@ export function DragDropProvider(props: PropsWithChildren<{}>) {
         beginDrag(...args: [itemType: string, item: unknown] | []) {
             if (args.length === 0) {
                 currentItem.current = undefined;
+                draggingLocal.current = false;
             }
             else {
                 currentItem.current = args;
+                draggingLocal.current = true;
             }
             susbcriptions.current.forEach(callback => callback(...args as [itemType?: string, item?: unknown]));
         },

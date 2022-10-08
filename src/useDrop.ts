@@ -124,7 +124,7 @@ export function useDrop<ItemTypes extends string | readonly string[], Collected,
     useEffect(() => {
         if (dropTarget) {
             function handler(e: DragEvent) {
-                if (acceptForeign || item) {
+                if (item || (acceptForeign && itemType)) {
                     hover?.({
                         event: e,
                         // item isn't necessary non-undefined here, but due to the complexity of the types involved
