@@ -9,7 +9,7 @@
 
 ## Features
 
-* Feature parity with `react-dnd`'s `HTML5Backend`, including
+* Near feature parity with `react-dnd`'s `HTML5Backend`, including
     * `useDrag`/`useDrop` hooks
     * Custom drag handles
     * Custom drag preview
